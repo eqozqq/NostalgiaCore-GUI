@@ -14,8 +14,10 @@ namespace NostalgiaCoreGUI
         private Form parentForm;
         private string selectedPath;
         private string selectedVersion;
+        private string selectedPhpDownloadUrl;
         private readonly string[] availableVersions = new string[]
         {
+            "Last NostalgiaCore 0.8 commit",
             "NostalgiaCore_1.1.0_01",
             "NostalgiaCore_1.1.0",
             "NostalgiaCore_1.1.0beta4",
@@ -25,9 +27,9 @@ namespace NostalgiaCoreGUI
             "NostalgiaCore-Backport",
             "NostalgiaCore_0.9-0.10"
         };
-
         private readonly string[] downloadUrls = new string[]
         {
+            "https://github.com/kotyaralih/NostalgiaCore/archive/refs/heads/master.zip",
             "https://github.com/kotyaralih/NostalgiaCore/archive/refs/tags/NostalgiaCore_1.1.0_01.zip",
             "https://github.com/kotyaralih/NostalgiaCore/archive/refs/tags/NostalgiaCore_1.1.0.zip",
             "https://github.com/kotyaralih/NostalgiaCore/archive/refs/tags/NostalgiaCore_1.1.0beta4.zip",
@@ -37,9 +39,16 @@ namespace NostalgiaCoreGUI
             "https://github.com/oldminecraftcommunity/NostalgiaCore-Backport/archive/refs/heads/main.zip",
             "https://github.com/oldminecraftcommunity/NostalgiaCore-0.9-0.10/archive/refs/heads/master.zip"
         };
-
-        private const string phpDownloadUrl = "https://github.com/kotyaralih/NostalgiaCore/releases/download/NostalgiaCore_1.1.0_01/PHP_Windows_x64.zip";
-
+        private readonly string[] availablePhpVersions = new string[]
+        {
+            "PHP 8.0",
+            "PHP 5.6"
+        };
+        private readonly string[] phpDownloadUrls = new string[]
+        {
+            "https://github.com/kotyaralih/NostalgiaCore/releases/download/NostalgiaCore_1.1.0_01/PHP_Windows_x64.zip",
+            "https://github.com/LegacyMinecraftPE/serverassets/raw/refs/heads/main/PHP_5.6.4_x64_Windows.zip"
+        };
         private Label statusLabel;
         private ProgressBar progressBar;
         private BackgroundWorker worker;
@@ -60,19 +69,19 @@ namespace NostalgiaCoreGUI
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.FormClosed += InstallServerForm_FormClosed;
-
             TableLayoutPanel mainPanel = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                RowCount = 5,
+                RowCount = 7,
                 ColumnCount = 1
             };
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 16));
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 16));
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 16));
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 16));
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 10));
+            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 10));
             mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
-            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
-            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
-            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
-            mainPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
-
             Label titleLabel = new Label
             {
                 Text = "Install NostalgiaCore Server",
@@ -80,7 +89,6 @@ namespace NostalgiaCoreGUI
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Fill
             };
-
             Panel locationPanel = new Panel { Dock = DockStyle.Fill };
             Label locationLabel = new Label
             {
@@ -106,7 +114,6 @@ namespace NostalgiaCoreGUI
                 {
                     folderDialog.Description = "Select installation directory for NostalgiaCore server";
                     folderDialog.ShowNewFolderButton = true;
-
                     if (folderDialog.ShowDialog() == DialogResult.OK)
                     {
                         selectedPath = folderDialog.SelectedPath;
@@ -117,7 +124,6 @@ namespace NostalgiaCoreGUI
             locationPanel.Controls.Add(locationLabel);
             locationPanel.Controls.Add(locationTextBox);
             locationPanel.Controls.Add(browseButton);
-
             Panel versionPanel = new Panel { Dock = DockStyle.Fill };
             Label versionLabel = new Label
             {
@@ -140,14 +146,34 @@ namespace NostalgiaCoreGUI
             selectedVersion = availableVersions[0];
             versionPanel.Controls.Add(versionLabel);
             versionPanel.Controls.Add(versionComboBox);
-
+            Panel phpPanel = new Panel { Dock = DockStyle.Fill };
+            Label phpLabel = new Label
+            {
+                Text = "PHP Version:",
+                AutoSize = true,
+                Location = new Point(10, 15)
+            };
+            ComboBox phpComboBox = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Location = new Point(150, 12),
+                Width = 300
+            };
+            phpComboBox.Items.AddRange(availablePhpVersions);
+            phpComboBox.SelectedIndex = 0;
+            phpComboBox.SelectedIndexChanged += (s, e) =>
+            {
+                selectedPhpDownloadUrl = phpDownloadUrls[phpComboBox.SelectedIndex];
+            };
+            selectedPhpDownloadUrl = phpDownloadUrls[0];
+            phpPanel.Controls.Add(phpLabel);
+            phpPanel.Controls.Add(phpComboBox);
             statusLabel = new Label
             {
                 Text = "Ready to install",
                 TextAlign = ContentAlignment.MiddleCenter,
                 Dock = DockStyle.Fill
             };
-
             progressBar = new ProgressBar
             {
                 Dock = DockStyle.Fill,
@@ -155,7 +181,6 @@ namespace NostalgiaCoreGUI
                 Style = ProgressBarStyle.Continuous,
                 Value = 0
             };
-
             installButton = new Button
             {
                 Text = "Install Server",
@@ -163,18 +188,15 @@ namespace NostalgiaCoreGUI
                 Margin = new Padding(200, 10, 200, 10)
             };
             installButton.Click += InstallButton_Click;
-
             mainPanel.Controls.Add(titleLabel, 0, 0);
             mainPanel.Controls.Add(locationPanel, 0, 1);
             mainPanel.Controls.Add(versionPanel, 0, 2);
-            mainPanel.Controls.Add(statusLabel, 0, 3);
-            mainPanel.Controls.Add(progressBar, 0, 3);
-            mainPanel.Controls.Add(installButton, 0, 4);
-
+            mainPanel.Controls.Add(phpPanel, 0, 3);
+            mainPanel.Controls.Add(statusLabel, 0, 4);
+            mainPanel.Controls.Add(progressBar, 0, 5);
+            mainPanel.Controls.Add(installButton, 0, 6);
             progressBar.Visible = false;
-
             this.Controls.Add(mainPanel);
-
             worker = new BackgroundWorker
             {
                 WorkerReportsProgress = true,
@@ -192,29 +214,24 @@ namespace NostalgiaCoreGUI
                 MessageBox.Show("Please select an installation directory.", "Missing Information", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-
             if (Directory.Exists(selectedPath) && Directory.GetFiles(selectedPath).Length > 0)
             {
-                DialogResult result = MessageBox.Show("The selected directory is not empty. Continue anyway?",
-                    "Directory Not Empty", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                DialogResult result = MessageBox.Show("The selected directory is not empty. Continue anyway?", "Directory Not Empty", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
                 if (result == DialogResult.No)
                 {
                     return;
                 }
             }
-
             installButton.Visible = false;
             statusLabel.Visible = false;
             progressBar.Visible = true;
             progressBar.Value = 0;
-
             int versionIndex = Array.IndexOf(availableVersions, selectedVersion);
             string downloadUrl = downloadUrls[versionIndex];
-
             worker.RunWorkerAsync(new InstallationInfo
             {
                 ServerDownloadUrl = downloadUrl,
-                PhpDownloadUrl = phpDownloadUrl,
+                PhpDownloadUrl = selectedPhpDownloadUrl,
                 InstallPath = selectedPath,
                 VersionName = selectedVersion
             });
@@ -226,25 +243,20 @@ namespace NostalgiaCoreGUI
             try
             {
                 Directory.CreateDirectory(info.InstallPath);
-
                 worker.ReportProgress(10, "Downloading NostalgiaCore...");
                 string serverZipPath = Path.Combine(Path.GetTempPath(), "nostalgiacore_server.zip");
                 DownloadFile(info.ServerDownloadUrl, serverZipPath);
-
                 worker.ReportProgress(40, "Extracting NostalgiaCore...");
                 ExtractZipFile(serverZipPath, info.InstallPath);
                 File.Delete(serverZipPath);
-
                 worker.ReportProgress(60, "Downloading PHP binaries...");
                 string phpZipPath = Path.Combine(Path.GetTempPath(), "php_binaries.zip");
                 DownloadFile(info.PhpDownloadUrl, phpZipPath);
-
                 worker.ReportProgress(80, "Extracting PHP binaries...");
                 string binPath = Path.Combine(info.InstallPath, "bin");
                 Directory.CreateDirectory(binPath);
                 ExtractZipFile(phpZipPath, binPath);
                 File.Delete(phpZipPath);
-
                 worker.ReportProgress(100, "Installation completed successfully!");
                 e.Result = info.InstallPath;
             }
@@ -324,7 +336,9 @@ namespace NostalgiaCoreGUI
             }
         }
 
-        private void InstallServerForm_FormClosed(object sender, FormClosedEventArgs e) {}
+        private void InstallServerForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+        }
 
         private class InstallationInfo
         {

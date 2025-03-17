@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>1.0</Version>
-    <FileVersion>1.0</FileVersion>
+    <Version>1.0.1</Version>
+    <FileVersion>1.0.1</FileVersion>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0-windows</TargetFramework>
     <RootNamespace>NostalgiaCoreGUI</RootNamespace>
